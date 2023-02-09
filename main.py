@@ -35,8 +35,10 @@ class Camera:
 
             for objectCoords in contours:
                 # Vale à pena validar tamanhos dos contornos?
-                x,y,w,h = cv.boundingRect(objectCoords)
-                frame = cv.rectangle(frame,(x,y),(x+w,y+h),BOX_COLOR,BOX_THICKNESS)
+                area = cv.contourArea(objectCoords)
+                if area > 1000:
+                    x,y,w,h = cv.boundingRect(objectCoords)
+                    frame = cv.rectangle(frame,(x,y),(x+w,y+h),BOX_COLOR,BOX_THICKNESS)
             
             cv.imshow("Video:",frame)
 
