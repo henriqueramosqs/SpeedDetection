@@ -46,15 +46,28 @@ class Camera:
             contours, hierarchy = cv.findContours(noBGFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE) # Testar outros retrival modes
 
             for objectCoords in contours:
-                area = cv.contourArea(objectCoords)
-                if area > 1000:
-                    x,y,w,h = cv.boundingRect(objectCoords)
-                    frame = cv.rectangle(frame,(x,y),(x+w,y+h),BOX_COLOR,BOX_THICKNESS)
 
-            cv.line(frame, (0, 600), (0, 800), RED, 3)
-            cv.line(frame, (500, 0), (700, 0), RED, 3)    
+                x,y,w,h = cv.boundingRect(objectCoords)
+                #Pegar centro do objeto
+                cx = (x + x + w) // 2
+                cy = (y + y + h) // 2
+                
+                #contorna o veiculo somente quando o centro dele cruza com o poligono
+                testPoly = cv.pointPolygonTest(np.array(area1, np.int32), (cx,cy), False)
+                testPoly2 = cv.pointPolygonTest(np.array(area2, np.int32), (cx,cy), False)
+                if testPoly >= 0 or testPoly2 >= 0:
+                    frame = cv.rectangle(frame,(x,y),(x+w,y+h),BOX_COLOR,BOX_THICKNESS)                   
+                    cv.circle(frame, (cx,cy),5,BOX_COLOR,BOX_THICKNESS)
+                    
+            #polígono da pista esquerda
+            area1 = [(340, 423), (587, 446), (555, 576), (142, 543)]
+            #polígono da pista direita
+            area2 = [(697, 447), (921, 431), (1068, 531), (732, 576)]
+            #desenha polígonos no vídeo
+            for a in [area1, area2]:
+                cv.polylines(frame, [np.array(a, np.int32)], True, BOX_COLOR,BOX_THICKNESS)
 
-            cv.putText(frame, f'Frame: {counter}', (450, 70), cv.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
+            #cv.putText(frame, f'Frame: {counter}', (450, 70), cv.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
             cv.imshow("Video:",frame)
 
             if cv.waitKey(1) == ord('q'):   
