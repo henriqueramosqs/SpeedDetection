@@ -2,7 +2,8 @@ import cv2 as cv
 import numpy as np
 from tracker import *
 
-BOX_COLOR = (0,255,0)
+BOX_COLOR_OKAY = (0,255,0)
+BOX_COLOR_OVER = (0,0,255)
 BOX_THICKNESS = 2
 RED = (255,0,0)
 
@@ -12,18 +13,11 @@ class Camera:
     #  2) Máscara para remover "o que não é pista" (X)
     #  3) Largura e comprimento máx dos carros  (X)
     #  4) Fazer delimitadores mudarem de cor quando algo passa
-    def __init__(self,roadQtd:int):
-       #self.ROAD_MASK = cv.imread("RoadMask.jpg")[:,:,0]
-       self.countf = 0
-       self.roadDelimiter = 398
-       self.queues=[[]for i in range(roadQtd)]
+    def __init__(self,speed):
+       self.ROAD_MASK = cv.imread(r"C:\Users\pedri\Downloads\RoadMask.jpg")[:,:,0]
        self.tracking = Tracker()
-       
-    def getRoad(self,bottomLeftPos:int):
-        if(bottomLeftPos>self.roadDelimiter):
-            return 1
-        else:
-            return 0
+       self.countf = 0
+       self.limspeed = speed
     
     def run(self,capture:cv.VideoCapture):
         backgtroundSubtractor =  cv.bgsegm.createBackgroundSubtractorMOG()
@@ -43,7 +37,7 @@ class Camera:
             blurredFrame = cv.GaussianBlur(grayFrame,(3,3),5)  # Testar outro filtros (se fizer diferença no resultado final)
             noBGFrame = backgtroundSubtractor.apply(blurredFrame) 
             
-            #np.bitwise_and(noBGFrame,self.ROAD_MASK,noBGFrame)
+            np.bitwise_and(noBGFrame,self.ROAD_MASK,noBGFrame)
             
             kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE,(8,8))
             noBGFrame = cv.morphologyEx(noBGFrame,cv.MORPH_CLOSE,kernel,iterations=2)
@@ -67,7 +61,7 @@ class Camera:
 
                 #desenha polígonos no vídeo
                 for a in [area1, area2]:
-                    cv.polylines(frame, [np.array(a, np.int32)], True, BOX_COLOR,BOX_THICKNESS)
+                    cv.polylines(frame, [np.array(a, np.int32)], True, BOX_COLOR_OKAY,BOX_THICKNESS)
                 
                 #contorna o veiculo somente quando o centro dele cruza com o poligono
                 inRoi = False
@@ -92,14 +86,20 @@ class Camera:
                 x,y,w,h,_ = detected[i]
                 cx = (x + x + w) // 2
                 cy = (y + y + h) // 2
-                frame = cv.rectangle(frame,(x,y),(x+w,y+h),BOX_COLOR,BOX_THICKNESS) 
+                
+                if speed > self.limspeed:
+                    box_color = BOX_COLOR_OVER
+                else:
+                    box_color = BOX_COLOR_OKAY
+            
+                frame = cv.rectangle(frame,(x,y),(x+w,y+h),box_color,BOX_THICKNESS) 
                 cv.putText(frame,str(id)+f" {speed:.2f} km/h",(x,y-15),cv.FONT_HERSHEY_PLAIN,1,(255,255,0),2)                  
-                cv.circle(frame, (cx,cy),5,BOX_COLOR,BOX_THICKNESS)
+                cv.circle(frame, (cx,cy),5,(255,255,255),BOX_THICKNESS)
                     
             cv.putText(frame, f'Vehicles: {self.tracking.getAmount()}', (450, 70), cv.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
-            cv.circle(frame, (350,600),17,BOX_COLOR,BOX_THICKNESS)
-            cv.line(frame, (0,TOP_LINE_RIGHT), (1200,TOP_LINE_RIGHT), (0,0,255), 2)
-            cv.line(frame, (0,BOTTOM_LINE_RIGHT), (1200,BOTTOM_LINE_RIGHT), (0,0,255), 2)
+            
+            # cv.line(frame, (0,TOP_LINE_RIGHT), (1200,TOP_LINE_RIGHT), (0,0,255), 2)
+            # cv.line(frame, (0,BOTTOM_LINE_RIGHT), (1200,BOTTOM_LINE_RIGHT), (0,0,255), 2)
             
             # cv.line(frame, (MIDDLE_RAY,0), (MIDDLE_RAY,700), (255,0,255), 2)
             cv.imshow("Video:",frame)
@@ -110,7 +110,7 @@ class Camera:
         capture.release()
         cv.destroyAllWindows()
         
-video = cv.VideoCapture(r"C:\Users\pedri\OneDrive\Área de Trabalho\SEMESTRE_7\INTRO_AO_PROC_DE_IMAGENS\TRAB_2\video.mp4")
+video = cv.VideoCapture(r"C:\Users\pedri\Downloads\cars_video.mp4")
             
-cam = Camera(2)
+cam = Camera(60)
 cam.run(video)

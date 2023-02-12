@@ -7,7 +7,7 @@ MIDDLE_RAY = 650
 LOW_POINT_RIGHT_POLY = 576
 TOP_LINE_RIGHT = 370
 BOTTOM_LINE_RIGHT = 390
-MAX_DIST = 18
+MAX_DIST = 20
 FPS = 30
 
 class Tracker:
@@ -15,7 +15,7 @@ class Tracker:
         self.cur = []
         self.prev = []
         self.count = 0
-        #self.aux = 0
+
     def update(self, detected, frame):
         self.cur = detected
         temp = []
