@@ -16,8 +16,10 @@ class Camera:
     def __init__(self,speed):
        self.ROAD_MASK = cv.imread(r"C:\Users\pedri\Downloads\RoadMask.jpg")[:,:,0]
        self.tracking = Tracker()
-       self.countf = 0
        self.limspeed = speed
+       self.exceedid = {}
+       self.countf = 0
+       self.exceed = 0
     
     def run(self,capture:cv.VideoCapture):
         backgtroundSubtractor =  cv.bgsegm.createBackgroundSubtractorMOG()
@@ -34,16 +36,19 @@ class Camera:
                 raise  Exception("Erro! Vídeo não pôde ser carregado apropriadamente.") 
             
             grayFrame = cv.cvtColor(frame,cv.COLOR_BGR2GRAY)
+            #cv.imshow("gray",grayFrame)
             blurredFrame = cv.GaussianBlur(grayFrame,(3,3),5)  # Testar outro filtros (se fizer diferença no resultado final)
             noBGFrame = backgtroundSubtractor.apply(blurredFrame) 
+
             
             np.bitwise_and(noBGFrame,self.ROAD_MASK,noBGFrame)
             
-            kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE,(8,8))
-            noBGFrame = cv.morphologyEx(noBGFrame,cv.MORPH_CLOSE,kernel,iterations=2)
-            noBGFrame = cv.morphologyEx(noBGFrame,cv.MORPH_OPEN,kernel,iterations=2)
-
+            kernelM = cv.getStructuringElement(cv.MORPH_ELLIPSE,(8,8))
+            noBGFrame = cv.morphologyEx(noBGFrame,cv.MORPH_CLOSE,kernelM,iterations=2)
+            noBGFrame = cv.morphologyEx(noBGFrame,cv.MORPH_OPEN,kernelM,iterations=3)
+                        
             contours, hierarchy = cv.findContours(noBGFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+            
             if(len(contours) == 0):
                 self.tracking.clean()
                 
@@ -89,6 +94,10 @@ class Camera:
                 
                 if speed > self.limspeed:
                     box_color = BOX_COLOR_OVER
+                    if self.exceedid.get(id) == None:
+                        self.exceedid[id] = True
+                        self.exceed += 1
+                    
                 else:
                     box_color = BOX_COLOR_OKAY
             
@@ -96,7 +105,8 @@ class Camera:
                 cv.putText(frame,str(id)+f" {speed:.2f} km/h",(x,y-15),cv.FONT_HERSHEY_PLAIN,1,(255,255,0),2)                  
                 cv.circle(frame, (cx,cy),5,(255,255,255),BOX_THICKNESS)
                     
-            cv.putText(frame, f'Vehicles: {self.tracking.getAmount()}', (450, 70), cv.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
+            cv.putText(frame, f'Vehicles: {self.tracking.getAmount()}', (450, 70), cv.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+            cv.putText(frame, f'Infractors: {self.exceed}', (40, 40), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             # cv.line(frame, (0,TOP_LINE_RIGHT), (1200,TOP_LINE_RIGHT), (0,0,255), 2)
             # cv.line(frame, (0,BOTTOM_LINE_RIGHT), (1200,BOTTOM_LINE_RIGHT), (0,0,255), 2)
