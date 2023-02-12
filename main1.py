@@ -43,14 +43,17 @@ class Camera:
             blurredFrame = cv.GaussianBlur(grayFrame,(3,3),5)  # Testar outro filtros (se fizer diferença no resultado final)
             noBGFrame = backgtroundSubtractor.apply(blurredFrame) 
             
+            #np.bitwise_and(noBGFrame,self.ROAD_MASK,noBGFrame)
+            
             kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE,(8,8))
             noBGFrame = cv.morphologyEx(noBGFrame,cv.MORPH_CLOSE,kernel,iterations=2)
             noBGFrame = cv.morphologyEx(noBGFrame,cv.MORPH_OPEN,kernel,iterations=2)
 
-            contours, hierarchy = cv.findContours(noBGFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE) # Testar outros retrival modes
+            contours, hierarchy = cv.findContours(noBGFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
             if(len(contours) == 0):
                 self.tracking.clean()
                 
+            detected = []
             for objectCoords in contours:
                 area = cv.contourArea(objectCoords)
                 #If its area is less than 1000, its probably not a vehicule.
@@ -74,21 +77,29 @@ class Camera:
                     inRoi = True
                     
                 #Vendo só os da pista direita.
-                id = -1
-                speed = -1
                 if (cx > MIDDLE_RAY and cy < LOW_POINT_RIGHT_POLY and cy > TOP_LINE_RIGHT):
-                    id,speed = self.tracking.update(cx,cy,self.countf,inRoi)
+                    detected.append((x,y,w,h,inRoi))
+
+            
+            out = self.tracking.update(detected,self.countf)
+            
+            for i in range(len(out)):
+                id,speed = out[i]
                 
-                if id == -1 and speed == -1:
+                if(id == -1 and speed == -1):
                     continue
                 
+                x,y,w,h,_ = detected[i]
+                cx = (x + x + w) // 2
+                cy = (y + y + h) // 2
                 frame = cv.rectangle(frame,(x,y),(x+w,y+h),BOX_COLOR,BOX_THICKNESS) 
                 cv.putText(frame,str(id)+f" {speed:.2f} km/h",(x,y-15),cv.FONT_HERSHEY_PLAIN,1,(255,255,0),2)                  
                 cv.circle(frame, (cx,cy),5,BOX_COLOR,BOX_THICKNESS)
                     
             cv.putText(frame, f'Vehicles: {self.tracking.getAmount()}', (450, 70), cv.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
-            # cv.line(frame, (0,TOP_LINE_RIGHT), (1200,TOP_LINE_RIGHT), (0,0,255), 2)
-            # cv.line(frame, (0,BOTTOM_LINE_RIGHT), (1200,BOTTOM_LINE_RIGHT), (0,0,255), 2)
+            cv.circle(frame, (350,600),17,BOX_COLOR,BOX_THICKNESS)
+            cv.line(frame, (0,TOP_LINE_RIGHT), (1200,TOP_LINE_RIGHT), (0,0,255), 2)
+            cv.line(frame, (0,BOTTOM_LINE_RIGHT), (1200,BOTTOM_LINE_RIGHT), (0,0,255), 2)
             
             # cv.line(frame, (MIDDLE_RAY,0), (MIDDLE_RAY,700), (255,0,255), 2)
             cv.imshow("Video:",frame)
@@ -99,7 +110,7 @@ class Camera:
         capture.release()
         cv.destroyAllWindows()
         
-video = cv.VideoCapture(r"C:\Users\pedri\OneDrive\Área de Trabalho\SEMESTRE_7\INTRO_AO_PROC_DE_IMAGENS\TRAB_2\REPO_1\SpeedDetection\video.mp4")
+video = cv.VideoCapture(r"C:\Users\pedri\OneDrive\Área de Trabalho\SEMESTRE_7\INTRO_AO_PROC_DE_IMAGENS\TRAB_2\video.mp4")
             
 cam = Camera(2)
 cam.run(video)
