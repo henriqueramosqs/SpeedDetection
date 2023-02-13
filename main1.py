@@ -10,7 +10,7 @@ RED = (255,0,0)
 class Camera:
 
     def __init__(self,speed):
-       self.ROAD_MASK = cv.imread(r"C:\Users\pedri\Downloads\RoadMask.jpg")[:,:,0]
+       self.ROAD_MASK = cv.imread("RoadMask.jpg")[:,:,0]
        self.tracking = Tracker(60)
        self.exceedid = {}
        self.countf = 0
@@ -90,7 +90,7 @@ class Camera:
                     box_color = BOX_COLOR_OKAY
             
                 frame = cv.rectangle(frame,(x,y),(x+w,y+h),box_color,BOX_THICKNESS) 
-                cv.putText(frame,str(id)+f" {speed:.2f} km/h",(x,y-15),cv.FONT_HERSHEY_PLAIN,1,(255,255,0),2)                  
+                cv.putText(frame,f"{str(id)}: {speed:.2f} km/h",(x,y-15),cv.FONT_HERSHEY_PLAIN,1,(255,255,0),2)                  
                 cv.circle(frame, (cx,cy),5,(255,255,255),BOX_THICKNESS)
                     
             cv.putText(frame, f'Vehicles: {self.tracking.getAmount()}', (450, 70), cv.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
@@ -110,7 +110,7 @@ class Camera:
         capture.release()
         cv.destroyAllWindows()
         
-video = cv.VideoCapture(r"C:\Users\pedri\Downloads\cars_video.mp4")
+video = cv.VideoCapture("video.mp4")
             
 cam = Camera(60)
 cam.run(video)
