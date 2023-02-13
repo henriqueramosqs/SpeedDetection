@@ -4,16 +4,24 @@ from vehicule import *
 import math
 
 MIDDLE_RAY = 650
-LOW_POINT_RIGHT_POLY = 576
+
+LOW_POINT_RIGHT_POLY = 531
 TOP_LINE_RIGHT = 370
 BOTTOM_LINE_RIGHT = 390
-MAX_DIST = 20
+
+HIGH_POINT_LEFT_POLY = 423
+LOW_POINT_LEFT_POLY = 543
+BOTTOM_LINE_LEFT = 750
+
+MAX_DIST = 35
 FPS = 30
 
+
 class Tracker:
-    def __init__(self):
+    def __init__(self, lim):
         self.cur = []
         self.prev = []
+        self.limspeed = lim
         self.count = 0
 
     def update(self, detected, frame):
@@ -43,10 +51,15 @@ class Tracker:
                     temp.append(match)
                     out.append((match.id,0))
                 else:
-                    if cy > BOTTOM_LINE_RIGHT:
+                    if (cy > BOTTOM_LINE_RIGHT and cx > MIDDLE_RAY) or (cy > LOW_POINT_LEFT_POLY and cx < MIDDLE_RAY):
                         match.update(cx,cy)
                         if(match.speed == -1):
                             match.setSpeed(FPS)
+                            if(self.overSpeed(match.speed)):
+                                print(f'Veículo {match.id} apresenta velocidade {match.speed:.2f} km/h. Excedeu o limite da via.')
+                            else:
+                                print(f'Veículo {match.id} apresenta velocidade {match.speed:.2f} km/h. Conforme o limite da via.')
+                                
                         temp.append(match)
                         out.append((match.id,match.speed))
                     else:
@@ -64,9 +77,11 @@ class Tracker:
         
         self.prev = temp
         return out
-        
+    
     def getAmount(self):
         return self.count
     
-    def clean(self):
-        self.curvehs = []
+    def overSpeed(self,speed):
+        if(speed > self.limspeed):
+            return True
+        return False
